@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: worldcup-backend
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      - db_data:/app/db
+      - ./all_matches.csv:/app/data/all_matches.csv:ro
+      - ./countries_names.csv:/app/data/countries_names.csv:ro
+    environment:
+      - PORT=3000
+      - DB_PATH=/app/db/worldcup.db
+      - CSV_MATCHES_PATH=/app/data/all_matches.csv
+      - CSV_COUNTRIES_PATH=/app/data/countries_names.csv
+      - LIVE_SYNC_INTERVAL=${LIVE_SYNC_INTERVAL:-60}
+      - LIVE_SYNC_ENABLED=${LIVE_SYNC_ENABLED:-false}
+      - FOOTBALL_API_KEY=${FOOTBALL_API_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build: ./frontend
+    container_name: worldcup-frontend
+    ports:
+      - "${WEB_PORT:-80}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  db_data:
+    driver: local
