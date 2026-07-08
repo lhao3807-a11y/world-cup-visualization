@@ -25,40 +25,33 @@ router.get('/:year', asyncHandler(async (req, res) => {
   const db = getDb();
   const year = parseInt(req.params.year);
 
-  // 2026 年为第23届世界杯 — 优先从 live_matches + matches 表获取
+  // 2026 年为第23届世界杯 — 从主表 + live_matches 获取
   if (year === 2026) {
-    const liveMatches = db.prepare(`
+    const mainMatches = db.prepare('SELECT * FROM matches WHERE year = 2026 ORDER BY date').all();
+
+    // 已完成的比赛已在主表中，这里额外获取未开始/进行中的
+    const pendingMatches = db.prepare(`
       SELECT match_id as id, start_time as date, home_team, away_team,
              home_score, away_score, 'World Cup' as tournament, status,
              'United States / Mexico / Canada' as country, 1 as neutral,
              2026 as year, CAST(substr(start_time,6,2) AS INTEGER) as month, 1 as is_world_cup
-      FROM live_matches ORDER BY start_time
+      FROM live_matches WHERE status != 'finished' ORDER BY start_time
     `).all();
 
-    const mainMatches = db.prepare('SELECT * FROM matches WHERE year = 2026 ORDER BY date').all();
-
-    // 去重合并
-    const seen = new Set(mainMatches.map(m => m.id));
-    const merged = [...mainMatches];
-    for (const lm of liveMatches) {
-      if (!seen.has(lm.id) && lm.status === 'finished') {
-        merged.push(lm);
-      }
-    }
-
-    const totalGoals = merged.reduce((s, m) => s + (m.home_score || 0) + (m.away_score || 0), 0);
-    const avgG = merged.length > 0 ? (totalGoals / merged.length).toFixed(2) : 0;
+    const allMatches = [...mainMatches, ...pendingMatches];
+    const totalGoals = allMatches.reduce((s, m) => s + (m.home_score || 0) + (m.away_score || 0), 0);
+    const avgG = allMatches.length > 0 ? (totalGoals / allMatches.length).toFixed(2) : 0;
 
     return res.json({
       success: true,
       data: {
-        stats: { year: 2026, matches: merged.length, goals: totalGoals, avg_goals: parseFloat(avgG) },
-        matches: merged,
+        stats: { year: 2026, matches: allMatches.length, goals: totalGoals, avg_goals: parseFloat(avgG) },
+        matches: allMatches,
         topTeams: [],
         is_current: true,
         edition: 23,
-        note: merged.length > 0
-          ? `2026年美加墨世界杯 — 第23届，已录入 ${merged.length} 场比赛`
+        note: allMatches.length > 0
+          ? `2026年美加墨世界杯 — 第23届，已录入 ${allMatches.length} 场比赛`
           : '2026年美加墨世界杯 — 第23届，比赛数据待更新'
       }
     });

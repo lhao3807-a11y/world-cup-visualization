@@ -1,3 +1,6 @@
+// 加载 .env 文件（必须放在最前面）
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
