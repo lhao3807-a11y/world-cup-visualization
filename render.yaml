@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: worldcup-backend
+    env: node
+    region: oregon
+    rootDir: .
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
+    healthCheckPath: /api/health
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: LOG_LEVEL
+        value: info
+      - key: CORS_ORIGINS
+        value: "https://worldcup-football-viz.vercel.app"
+      - key: LIVE_SYNC_ENABLED
+        value: "false"

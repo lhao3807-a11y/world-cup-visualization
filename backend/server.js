@@ -1,5 +1,9 @@
-// 加载 .env 文件（必须放在最前面）
-require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+// 加载 .env 文件（本地开发用，生产环境由平台注入环境变量）
+try {
+  require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+} catch {
+  // dotenv not available in production, env vars are set by platform
+}
 
 const express = require('express');
 const cors = require('cors');
@@ -35,17 +39,26 @@ app.use(helmet({
 
 // CORS — 生产环境限制来源
 const ALLOWED_ORIGINS = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',')
-  : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
+  ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+  : [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'https://worldcup-football-viz.vercel.app',
+      /^https:\/\/worldcup-football.*\.vercel\.app$/,  // 允许所有 Vercel 预览分支
+    ];
 
 app.use(cors({
   origin: (origin, callback) => {
     // 允许无 origin 的请求 (如 curl、Postman、同源请求)
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
-    }
+    if (!origin) return callback(null, true);
+    // 检查字符串匹配和正则匹配
+    const allowed = ALLOWED_ORIGINS.some(o =>
+      (typeof o === 'string' && o === origin) ||
+      (o instanceof RegExp && o.test(origin))
+    );
+    if (allowed) return callback(null, true);
+    callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
   credentials: true
 }));
