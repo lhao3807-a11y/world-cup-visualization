@@ -1,22 +1,65 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const { getDb } = require('./db');
 const { seed } = require('./seed');
+const { globalErrorHandler } = require('./middleware/errorHandler');
+const { apiLimiter, postLimiter } = require('./middleware/security');
+const logger = require('./utils/logger');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// ========================
+// 安全 & 基础中间件
+// ========================
 
-// Request logger
+// Helmet 安全响应头 (CSP, X-Frame-Options, HSTS 等)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}));
+
+// CORS — 生产环境限制来源
+const ALLOWED_ORIGINS = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',')
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // 允许无 origin 的请求 (如 curl、Postman、同源请求)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  credentials: true
+}));
+
+app.use(express.json({ limit: '1mb' }));
+
+// 全 API 速率限制
+app.use('/api', apiLimiter);
+// POST 接口更严格的限制
+app.use('/api/compare', postLimiter);
+
+// 请求日志 (使用结构化 logger)
 app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
     const ms = Date.now() - start;
-    console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${ms}ms`);
+    logger.request(req.method, req.originalUrl, res.statusCode, ms);
   });
   next();
 });
@@ -31,19 +74,32 @@ app.use('/api/compare', require('./routes/comparison'));
 app.use('/api/timeline', require('./routes/timeline'));
 app.use('/api/live', require('./routes/live'));
 
-// Health check
+// Health check — 增强诊断
 app.get('/api/health', (req, res) => {
-  const db = getDb();
-  const matchCount = db.prepare('SELECT COUNT(*) as c FROM matches').get();
-  res.json({
-    success: true,
-    data: {
-      status: 'healthy',
-      uptime: process.uptime(),
-      matches_count: matchCount.c,
-      timestamp: new Date().toISOString()
-    }
-  });
+  try {
+    const db = getDb();
+    const matchCount = db.prepare('SELECT COUNT(*) as c FROM matches').get();
+    const teamCount = db.prepare('SELECT COUNT(*) as c FROM teams').get();
+    const memUsage = process.memoryUsage();
+
+    res.json({
+      success: true,
+      data: {
+        status: 'healthy',
+        uptime: Math.round(process.uptime()),
+        matches_count: matchCount.c,
+        teams_count: teamCount.c,
+        memory_mb: Math.round(memUsage.heapUsed / 1024 / 1024),
+        node_version: process.version,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (err) {
+    res.status(503).json({
+      success: false,
+      error: { code: 'DB_ERROR', message: 'Database connection failed' }
+    });
+  }
 });
 
 // Serve frontend static files in production
@@ -59,30 +115,24 @@ app.get('*', (req, res) => {
   }
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    success: false,
-    error: { code: 'INTERNAL_ERROR', message: 'Internal server error' }
-  });
-});
+// 全局错误处理 (在所有路由之后)
+app.use(globalErrorHandler);
 
 // Initialize database and start server
 async function start() {
   try {
-    console.log('[Server] Initializing database...');
-    getDb(); // Ensure DB is created
+    logger.info('server', 'Initializing database...');
+    getDb();
 
-    console.log('[Server] Running seed...');
+    logger.info('server', 'Running seed...');
     seed();
 
     app.listen(PORT, () => {
-      console.log(`[Server] World Cup API running on http://localhost:${PORT}`);
-      console.log(`[Server] Health check: http://localhost:${PORT}/api/health`);
+      logger.info('server', `World Cup API running on http://localhost:${PORT}`);
+      logger.info('server', `Health check: http://localhost:${PORT}/api/health`);
     });
   } catch (err) {
-    console.error('[Server] Failed to start:', err);
+    logger.error('server', 'Failed to start', { error: err.message });
     process.exit(1);
   }
 }

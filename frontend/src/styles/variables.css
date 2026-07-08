@@ -1,47 +1,110 @@
-/* ===== Dark Theme (default) ===== */
+/* ===== Dark Theme (default) — 深色电竞数据风 ===== */
 :root,
 [data-theme="dark"] {
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #111527;
-  --bg-card: #141929;
-  --bg-card-hover: #1a2035;
+  /* Base */
+  --bg-primary: #080B14;
+  --bg-secondary: #0d1222;
+  --bg-card: #111622;
+  --bg-card-hover: #171D2C;
+  --bg-card-alt: #171D2C;
   --bg-input: #0d1220;
-  --border-color: rgba(64, 158, 255, 0.12);
-  --border-active: rgba(64, 158, 255, 0.35);
-  --text-primary: #e8eaed;
-  --text-secondary: #9aa0b4;
-  --text-muted: #636980;
-  --accent-primary: #409EFF;
-  --accent-secondary: #00d4aa;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+
+  /* Borders */
+  --border-color: rgba(40, 80, 180, 0.12);
+  --border-active: rgba(40, 80, 180, 0.35);
+  --border-card-gradient: linear-gradient(90deg, rgba(40,80,180,0.2), rgba(20,160,120,0.2));
+  --border-popup-gradient: linear-gradient(90deg, rgba(35,116,255,0.3), rgba(0,196,140,0.3));
+
+  /* Brand colors — 足球青蓝体系 */
+  --brand-blue: #2374FF;
+  --brand-cyan: #00C48C;
+  --brand-orange: #FF7D34;
+  --brand-purple: #9966FF;
+
+  /* Accent aliases */
+  --accent-primary: #2374FF;
+  --accent-secondary: #00C48C;
+  --accent-orange: #FF7D34;
+  --accent-purple: #9966FF;
   --accent-danger: #f56c6c;
   --accent-warning: #e6a23c;
   --accent-success: #67c23a;
-  --chart-gradient-start: #409EFF;
-  --chart-gradient-end: #00d4aa;
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --glow-accent: 0 0 20px rgba(64, 158, 255, 0.15);
+
+  /* Chart */
+  --chart-gradient-start: #2374FF;
+  --chart-gradient-end: #00C48C;
+  --chart-bg: rgba(20, 40, 90, 0.25);
+
+  /* Text hierarchy */
+  --text-title: #F2F5FF;       /* 一级标题 */
+  --text-primary: #FFFFFF;      /* 二级数值 */
+  --text-secondary: #A0AEC7;    /* 三级说明 */
+  --text-muted: #687693;        /* 辅助小字 */
+
+  /* Shadows */
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --glow-cyan: 0 0 16px rgba(0, 196, 140, 0.2);
+  --glow-blue: 0 0 16px rgba(35, 116, 255, 0.2);
+  --glow-hover: 0 4px 24px rgba(0, 196, 140, 0.18);
+
+  /* Scrollbar */
   --scrollbar-track: #0d1220;
   --scrollbar-thumb: #2a3050;
+
+  /* Table */
+  --table-row-odd: #111622;
+  --table-row-even: #171D2C;
+  --table-hover-bg: rgba(0, 196, 140, 0.06);
+  --table-header-bg: rgba(35, 116, 255, 0.12);
 }
 
 /* ===== Light Theme ===== */
 [data-theme="light"] {
-  --bg-primary: #f5f7fa;
+  --bg-primary: #f0f2f5;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
-  --bg-card-hover: #f0f2f5;
+  --bg-card-hover: #f5f7fa;
+  --bg-card-alt: #f5f7fa;
   --bg-input: #ffffff;
-  --border-color: rgba(0, 0, 0, 0.08);
-  --border-active: rgba(64, 158, 255, 0.5);
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  --border-color: rgba(0, 0, 0, 0.06);
+  --border-active: rgba(35, 116, 255, 0.5);
+  --border-card-gradient: linear-gradient(90deg, rgba(35,116,255,0.15), rgba(0,196,140,0.15));
+  --border-popup-gradient: linear-gradient(90deg, rgba(35,116,255,0.4), rgba(0,196,140,0.4));
+
+  --brand-blue: #2374FF;
+  --brand-cyan: #00a87a;
+  --brand-orange: #e86a20;
+  --brand-purple: #8855ee;
+
+  --accent-primary: #2374FF;
+  --accent-secondary: #00a87a;
+  --accent-orange: #e86a20;
+  --accent-purple: #8855ee;
+
+  --chart-bg: rgba(35, 116, 255, 0.04);
+  --chart-gradient-start: #2374FF;
+  --chart-gradient-end: #00a87a;
+
+  --text-title: #1a1a2e;
   --text-primary: #1a1a2e;
   --text-secondary: #606266;
   --text-muted: #909399;
-  --accent-primary: #409EFF;
-  --accent-secondary: #00a87a;
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
-  --glow-accent: 0 0 20px rgba(64, 158, 255, 0.08);
+
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --glow-cyan: 0 0 16px rgba(0, 168, 122, 0.12);
+  --glow-blue: 0 0 16px rgba(35, 116, 255, 0.12);
+  --glow-hover: 0 4px 24px rgba(0, 168, 122, 0.1);
+
   --scrollbar-track: #e8eaed;
   --scrollbar-thumb: #c0c4cc;
+
+  --table-row-odd: #ffffff;
+  --table-row-even: #f5f7fa;
+  --table-hover-bg: rgba(0, 196, 140, 0.05);
+  --table-header-bg: rgba(35, 116, 255, 0.08);
 }

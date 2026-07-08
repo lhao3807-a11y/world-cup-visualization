@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const { asyncHandler } = require('../middleware/errorHandler');
 
 // POST /api/compare/teams — 两支队伍对比
-router.post('/teams', (req, res) => {
+router.post('/teams', asyncHandler(async (req, res) => {
   const db = getDb();
   const { team_a, team_b } = req.body;
 
@@ -51,10 +52,6 @@ router.post('/teams', (req, res) => {
     }
   }
 
-  // Yearly trends for radar chart
-  const trendA = db.prepare('SELECT year, win_rate, goals_for, goals_against FROM team_stats WHERE team_name = ? ORDER BY year').all(team_a);
-  const trendB = db.prepare('SELECT year, win_rate, goals_for, goals_against FROM team_stats WHERE team_name = ? ORDER BY year').all(team_b);
-
   // Recent form (last 10 matches)
   const recentA = db.prepare(`
     SELECT * FROM matches WHERE (home_team_norm = ? OR away_team_norm = ?) ORDER BY date DESC LIMIT 10
@@ -70,7 +67,6 @@ router.post('/teams', (req, res) => {
       team_a: { name: team_a, stats: statsA, recent: recentA },
       team_b: { name: team_b, stats: statsB, recent: recentB },
       head_to_head: { matches: h2h.slice(0, 20), summary: h2hSummary },
-      // Radar chart data
       radar: {
         indicators: ['胜率', '总进球', '场均进球', '失球数', '比赛场次', '胜场数'],
         team_a: [
@@ -92,6 +88,6 @@ router.post('/teams', (req, res) => {
       }
     }
   });
-});
+}));
 
 module.exports = router;

@@ -45,9 +45,6 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .main-content {
-    padding: 16px;
-    padding-top: 70px;
-  }
+  .main-content { padding: 16px; padding-top: 70px; }
 }
 </style>

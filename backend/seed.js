@@ -39,10 +39,24 @@ function seed() {
   insertMany(countries);
   console.log(`[Seed] Imported ${countries.length} country names.`);
 
-  // 2. Import match data
-  console.log('[Seed] Importing match data...');
+  // 2. Import match data (ONLY World Cup finals)
+  console.log('[Seed] Importing World Cup match data...');
   const matchesRaw = fs.readFileSync(MATCHES_CSV, 'utf-8');
-  const matches = parse(matchesRaw, { columns: true, skip_empty_lines: true });
+  const allMatches = parse(matchesRaw, { columns: true, skip_empty_lines: true });
+
+  // Filter: 仅保留 1930-2022 已完成的 22 届世界杯正赛
+  // 2026 世界杯虽正在进行，但 CSV 中为模拟数据，故排除
+  const validWCYears = new Set();
+  for (let y = 1930; y <= 2022; y += 4) {
+    if (y !== 1942 && y !== 1946) validWCYears.add(y);
+  }
+  const matches = allMatches.filter(row => {
+    const y = parseInt(row.date.substring(0, 4));
+    return row.tournament === 'World Cup' && validWCYears.has(y);
+  });
+  const skippedWC = allMatches.filter(row => row.tournament === 'World Cup' && !validWCYears.has(parseInt(row.date.substring(0, 4))));
+  if (skippedWC.length) console.log(`[Seed] Skipped ${skippedWC.length} matches in non-WC years (e.g. Women's/youth tournaments).`);
+  console.log(`[Seed] Filtered to ${matches.length} World Cup finals matches (from ${allMatches.length} total).`);
 
   const insertMatch = db.prepare(`
     INSERT INTO matches (date, home_team, away_team, home_team_norm, away_team_norm,
@@ -60,17 +74,11 @@ function seed() {
     return normMap[name] || name;
   }
 
-  function isWorldCup(tournament) {
-    const t = (tournament || '').toLowerCase();
-    return t.includes('world cup') || t.includes('fifa world');
-  }
-
   const matchInsertMany = db.transaction((rows) => {
     for (const row of rows) {
       const date = row.date;
       const year = parseInt(date.substring(0, 4));
       const month = parseInt(date.substring(5, 7));
-      const wc = isWorldCup(row.tournament) ? 1 : 0;
       insertMatch.run(
         date,
         row.home_team,
@@ -79,12 +87,12 @@ function seed() {
         normalize(row.away_team),
         parseInt(row.home_score) || 0,
         parseInt(row.away_score) || 0,
-        row.tournament || 'Unknown',
+        row.tournament || 'World Cup',
         row.country || 'Unknown',
         row.neutral === 'True' || row.neutral === 'true' || row.neutral === '1' ? 1 : 0,
         year,
         month,
-        wc
+        1  // All are World Cup matches now
       );
     }
   });
@@ -172,7 +180,7 @@ function seed() {
 
   // 5. Compute Elo ratings
   console.log('[Seed] Computing Elo ratings...');
-  const allMatches = db.prepare('SELECT * FROM matches ORDER BY date, id').all();
+  const eloMatches = db.prepare('SELECT * FROM matches ORDER BY date, id').all();
 
   const eloRatings = {};
   function getElo(team) {
@@ -195,7 +203,7 @@ function seed() {
 
   // Save Elo at end of each year
   const eloByYear = {};
-  for (const match of allMatches) {
+  for (const match of eloMatches) {
     const home = match.home_team_norm;
     const away = match.away_team_norm;
     const homeElo = getElo(home);

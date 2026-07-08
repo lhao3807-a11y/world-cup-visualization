@@ -1,17 +1,17 @@
 <template>
   <footer class="app-footer">
     <div class="footer-inner">
-      <div class="footer-stats">
-        <span>收录 {{ stats.total_matches?.toLocaleString() || '...' }} 场比赛</span>
+      <div class="footer-left">
+        <span>收录 <strong>{{ stats.total_matches?.toLocaleString() || '...' }}</strong> 场世界杯正赛</span>
         <span class="dot">·</span>
-        <span>覆盖 {{ stats.total_years || '...' }} 年数据</span>
+        <span>覆盖 <strong>23</strong> 届世界杯</span>
         <span class="dot">·</span>
-        <span>{{ stats.total_countries || '...' }} 个国家/地区</span>
+        <span><strong>{{ stats.host_countries || '...' }}</strong> 个参赛国家/地区</span>
       </div>
-      <div class="footer-text">
-        <span>世界杯全量数据可视化平台 © 2026</span>
+      <div class="footer-right">
+        <span>世界杯数据可视化 © 2026</span>
         <span class="dot">·</span>
-        <span>数据来源: 1872年至今国际足球赛事记录</span>
+        <span>数据来源：1930年至今 FIFA 世界杯正赛记录</span>
       </div>
     </div>
   </footer>
@@ -28,19 +28,20 @@ onMounted(async () => {
     const res = await client.get('/statistics/overview')
     stats.value = {
       total_matches: res.data.overview?.total_matches,
-      total_years: new Date().getFullYear() - 1872,
-      total_countries: res.data.overview?.total_countries
+      total_editions: res.data.overview?.total_editions,
+      host_countries: res.data.overview?.host_countries
     }
-  } catch (e) { /* silent */ }
+  } catch (e) { /* 静默失败 */ }
 })
 </script>
 
 <style scoped>
 .app-footer {
-  background: var(--bg-card);
-  border-top: 1px solid var(--border-color);
-  padding: 20px 24px;
+  border-top: 1px solid transparent;
+  border-image: linear-gradient(90deg, rgba(35,116,255,0.08), rgba(0,196,140,0.08)) 1;
+  padding: 18px 24px;
   margin-top: 40px;
+  opacity: 0.85;
 }
 .footer-inner {
   max-width: 1440px;
@@ -49,15 +50,16 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 12px;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
-.footer-stats { display: flex; gap: 8px; align-items: center; }
-.footer-text { display: flex; gap: 8px; align-items: center; }
-.dot { color: var(--border-active); }
+.footer-left, .footer-right { display: flex; gap: 8px; align-items: center; }
+.footer-left strong { color: var(--text-secondary); font-weight: 600; }
+.dot { color: var(--brand-blue); opacity: 0.5; }
 
 @media (max-width: 768px) {
-  .footer-inner { flex-direction: column; text-align: center; }
+  .footer-inner { flex-direction: column; text-align: center; gap: 6px; }
+  .footer-left, .footer-right { justify-content: center; }
 }
 </style>
